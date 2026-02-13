@@ -2,30 +2,34 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>For You 💖</title>
 
 <style>
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  min-height: 100%;
   width: 100%;
-  overflow: hidden;
-  position: fixed;
-  touch-action: none;
-  overscroll-behavior: none;
-  background: radial-gradient(circle at top, #1a002b, #000);
+  overflow-x: hidden;
+  background: linear-gradient(135deg, #ffd6ec, #ff9ecf, #ffc1e3);
   font-family: Arial, sans-serif;
-  color: white;
 }
 
-/* 🌌 ดาวพื้นหลัง */
-#stars {
+/* 💞 หัวใจพื้นหลัง */
+.bg-heart {
   position: fixed;
-  top: 0;
-  left: 0;
+  bottom: -20px;
+  color: rgba(255,255,255,0.4);
+  font-size: 20px;
+  pointer-events: none;
+  animation: floatBg 8s linear forwards;
   z-index: 0;
+}
+
+@keyframes floatBg {
+  from { transform: translateY(0); opacity: 0.7; }
+  to { transform: translateY(-110vh); opacity: 0; }
 }
 
 .container {
@@ -34,8 +38,8 @@ html, body {
   width: 100%;
   max-width: 360px;
   padding: 40px 20px;
-  text-align: center;
   margin: 0 auto;
+  text-align: center;
 }
 
 button {
@@ -69,7 +73,7 @@ button:active {
   margin: 20px auto 0;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 15px 40px rgba(255,0,150,0.4);
+  box-shadow: 0 10px 30px rgba(255,0,120,0.3);
   display: none;
 }
 
@@ -91,13 +95,14 @@ canvas {
   width: 100%;
   font-size: 16px;
   text-shadow: 0 0 5px black;
+  color: white;
 }
 
 #finalText {
   display: none;
   margin-top: 30px;
   font-size: 24px;
-  color: #ff8bd1;
+  color: #ff2e88;
   font-weight: bold;
   animation: pop 0.8s ease;
 }
@@ -107,7 +112,21 @@ canvas {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* 🎇 Firework particles */
+/* 💖 เอฟเฟกต์หัวใจ */
+.heart {
+  position: fixed;
+  bottom: -20px;
+  font-size: 20px;
+  animation: floatUp 4s linear forwards;
+  pointer-events: none;
+}
+
+@keyframes floatUp {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-110vh); opacity: 0; }
+}
+
+/* 🎇 Firework */
 .firework {
   position: fixed;
   width: 6px;
@@ -119,8 +138,6 @@ canvas {
 </head>
 
 <body>
-
-<canvas id="stars"></canvas>
 
 <div class="container">
   <button id="startBtn">แตะเพื่อเริ่มเซอร์ไพรส์ 💖</button>
@@ -138,37 +155,20 @@ canvas {
 <audio id="music" src="song.mp3" loop></audio>
 
 <script>
-/* 🌌 STAR BACKGROUND */
-const starCanvas = document.getElementById("stars");
-const sctx = starCanvas.getContext("2d");
-starCanvas.width = window.innerWidth;
-starCanvas.height = window.innerHeight;
-
-let stars = [];
-for(let i=0;i<120;i++){
-  stars.push({
-    x: Math.random()*starCanvas.width,
-    y: Math.random()*starCanvas.height,
-    r: Math.random()*2,
-    d: Math.random()*0.5
-  });
+/* 💞 พื้นหลังหัวใจลอยตลอด */
+function createBgHeart(){
+  const h=document.createElement("div");
+  h.className="bg-heart";
+  h.innerText="💗";
+  h.style.left=Math.random()*100+"vw";
+  h.style.fontSize=(14+Math.random()*26)+"px";
+  h.style.animationDuration=(6+Math.random()*4)+"s";
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(),10000);
 }
+setInterval(createBgHeart,500);
 
-function drawStars(){
-  sctx.clearRect(0,0,starCanvas.width,starCanvas.height);
-  sctx.fillStyle="white";
-  stars.forEach(star=>{
-    sctx.beginPath();
-    sctx.arc(star.x, star.y, star.r,0,Math.PI*2);
-    sctx.fill();
-    star.y += star.d;
-    if(star.y > starCanvas.height) star.y=0;
-  });
-  requestAnimationFrame(drawStars);
-}
-drawStars();
-
-/* Main logic */
+/* ข้อความ */
 const message="การได้กลับมาคุยกับหนูอีกครั้งสำหรับพี่มันไม่ใช่เรื่องเล็กๆเลย มันเหมือนพี่ได้โอกาสอีกครั้ง ที่จะดูแลความรู้สึกของหนูให้ดีกว่าเดิม พี่อาจจะไม่ได้เป็นคนที่เพอร์เฟคอะไรแล้วก็อาจจะพูดไม่ค่อยเก่งแต่พี่อยากเป็นคนหนึ่งที่ทำให้หนูมีความสุขทำให้หนูยิ้มได้ ไม่ว่าหนูจะไปเจออะไรมา และสิ่งเล็กๆนี้พี่ตั้งใจทำให้หนูจริงๆ💖💕";
 let index=0, revealed=false;
 
@@ -219,11 +219,11 @@ function initScratch(){
   }
 
   function checkReveal(){
-    if(revealed) return;
+    if(revealed)return;
     const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
     let cleared=0;
     for(let i=3;i<data.length;i+=4)
-      if(data[i]===0) cleared++;
+      if(data[i]===0)cleared++;
     if(cleared/(data.length/4)>0.55){
       revealed=true;
       canvas.style.display="none";
@@ -248,7 +248,36 @@ function initScratch(){
   });
 }
 
-/* 🎇 FIREWORK */
+/* Final */
+function showFinal(){
+  finalText.style.display="block";
+  finalText.innerHTML=`
+  หนูจะให้พี่ดูแลหัวใจหนูได้ไหม💖
+  <div style="margin-top:20px;">
+    <button id="yesBtn">YES 💖</button>
+  </div>
+  `;
+
+  for(let i=0;i<30;i++) createHeart();
+
+  document.getElementById("yesBtn").onclick=(e)=>{
+    finalText.innerHTML="พี่จะดูแลหัวใจหนูให้ดีที่สุดตลอดไป 💖";
+    firework(window.innerWidth/2,window.innerHeight/2);
+  };
+}
+
+/* เอฟเฟกต์หัวใจ */
+function createHeart(){
+  const h=document.createElement("div");
+  h.className="heart";
+  h.innerText="💖";
+  h.style.left=Math.random()*100+"vw";
+  h.style.fontSize=(18+Math.random()*20)+"px";
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(),4000);
+}
+
+/* Firework */
 function firework(x,y){
   for(let i=0;i<25;i++){
     const p=document.createElement("div");
@@ -273,24 +302,6 @@ function firework(x,y){
 
     setTimeout(()=>p.remove(),800);
   }
-}
-
-/* Final */
-function showFinal(){
-  finalText.style.display="block";
-  finalText.innerHTML=`
-  หนูจะให้พี่ดูแลหัวใจหนูได้ไหม💖
-  <div style="margin-top:20px;">
-    <button id="yesBtn">YES 💖</button>
-  </div>
-  `;
-
-  document.getElementById("yesBtn").onclick=(e)=>{
-    finalText.innerHTML="พี่จะดูแลหัวใจหนูให้ดีที่สุดตลอดไป 💖";
-    const rect=e.target.getBoundingClientRect();
-    firework(rect.left+rect.width/2,rect.top);
-    firework(window.innerWidth/2,window.innerHeight/2);
-  };
 }
 </script>
 
