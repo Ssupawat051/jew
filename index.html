@@ -12,24 +12,16 @@ html, body {
   min-height: 100%;
   width: 100%;
   overflow-x: hidden;
+  overscroll-behavior: none;
   background: linear-gradient(135deg, #ffd6ec, #ff9ecf, #ffc1e3);
   font-family: Arial, sans-serif;
 }
 
-/* 💞 หัวใจพื้นหลัง */ 
-.bg-heart {
-  position: fixed;
-  bottom: -20px;
-  color: rgba(255,255,255,0.4);
-  font-size: 20px;
-  pointer-events: none;
-  animation: floatBg 8s linear forwards;
-  z-index: 0;
-}
-
-@keyframes floatBg {
-  from { transform: translateY(0); opacity: 0.7; }
-  to { transform: translateY(-110vh); opacity: 0; }
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  touch-action: none;
 }
 
 .container {
@@ -83,12 +75,6 @@ button:active {
   object-fit: cover;
 }
 
-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
 .hint {
   position: absolute;
   bottom: 10px;
@@ -112,7 +98,6 @@ canvas {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* 💖 เอฟเฟกต์หัวใจ */
 .heart {
   position: fixed;
   bottom: -20px;
@@ -126,7 +111,32 @@ canvas {
   to { transform: translateY(-110vh); opacity: 0; }
 }
 
-/* 🎇 Firework */
+.rose {
+  position: fixed;
+  bottom: -40px;
+  font-size: 28px;
+  pointer-events: none;
+  animation: riseRose linear forwards;
+}
+
+@keyframes riseRose {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
+}
+
+.petal {
+  position: fixed;
+  top: -40px;
+  font-size: 20px;
+  pointer-events: none;
+  animation: fallPetal linear forwards;
+}
+
+@keyframes fallPetal {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(120vh) rotate(360deg); opacity: 0; }
+}
+
 .firework {
   position: fixed;
   width: 6px;
@@ -152,35 +162,18 @@ canvas {
   <div id="finalText"></div>
 </div>
 
-<audio id="music" src="song.mp3" loop></audio>
-
 <script>
-/* 💞 พื้นหลังหัวใจลอยตลอด */
-function createBgHeart(){
-  const h=document.createElement("div");
-  h.className="bg-heart";
-  h.innerText="💗";
-  h.style.left=Math.random()*100+"vw";
-  h.style.fontSize=(14+Math.random()*26)+"px";
-  h.style.animationDuration=(6+Math.random()*4)+"s";
-  document.body.appendChild(h);
-  setTimeout(()=>h.remove(),10000);
-}
-setInterval(createBgHeart,500);
-
-/* ข้อความ */
 const message="การได้กลับมาคุยกับหนูอีกครั้งสำหรับพี่มันไม่ใช่เรื่องเล็กๆเลย มันเหมือนพี่ได้โอกาสอีกครั้ง ที่จะดูแลความรู้สึกของหนูให้ดีกว่าเดิม พี่อาจจะไม่ได้เป็นคนที่เพอร์เฟคอะไรแล้วก็อาจจะพูดไม่ค่อยเก่งแต่พี่อยากเป็นคนหนึ่งที่ทำให้หนูมีความสุขทำให้หนูยิ้มได้ ไม่ว่าหนูจะไปเจออะไรมา และสิ่งเล็กๆนี้พี่ตั้งใจทำให้หนูจริงๆ💖💕";
-let index=0, revealed=false;
+
+let index=0,revealed=false;
 
 const startBtn=document.getElementById("startBtn");
 const textEl=document.getElementById("text");
 const card=document.getElementById("scratchCard");
-const music=document.getElementById("music");
 const finalText=document.getElementById("finalText");
 
 startBtn.onclick=()=>{
   startBtn.style.display="none";
-  music.play();
   card.style.display="block";
   typeText();
   initScratch();
@@ -190,26 +183,37 @@ function typeText(){
   if(index<message.length){
     textEl.innerHTML+=message.charAt(index);
     index++;
-    setTimeout(typeText,40);
+    setTimeout(typeText,35);
   }
 }
 
-/* Scratch */
 function initScratch(){
   const canvas=document.getElementById("scratch");
   const ctx=canvas.getContext("2d");
-  canvas.width=300; canvas.height=380;
-  ctx.fillStyle="#aaa";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  const dpr=window.devicePixelRatio || 1;
+  canvas.width=300*dpr;
+  canvas.height=380*dpr;
+  canvas.style.width="300px";
+  canvas.style.height="380px";
+  ctx.scale(dpr,dpr);
+
+  ctx.fillStyle="#bbb";
+  ctx.fillRect(0,0,300,380);
   ctx.globalCompositeOperation="destination-out";
 
   let scratching=false;
+  let lastCheck=0;
 
   function scratch(x,y){
     ctx.beginPath();
     ctx.arc(x,y,30,0,Math.PI*2);
     ctx.fill();
-    checkReveal();
+
+    if(Date.now()-lastCheck>300){
+      checkReveal();
+      lastCheck=Date.now();
+    }
   }
 
   function getXY(e){
@@ -220,11 +224,15 @@ function initScratch(){
 
   function checkReveal(){
     if(revealed)return;
-    const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const pixels=imgData.data;
     let cleared=0;
-    for(let i=3;i<data.length;i+=4)
-      if(data[i]===0)cleared++;
-    if(cleared/(data.length/4)>0.55){
+
+    for(let i=3;i<pixels.length;i+=4){
+      if(pixels[i]===0) cleared++;
+    }
+
+    if(cleared/(pixels.length/4)>0.5){
       revealed=true;
       canvas.style.display="none";
       showFinal();
@@ -239,16 +247,21 @@ function initScratch(){
     scratch(x,y);
   });
 
-  canvas.addEventListener("touchstart",()=>scratching=true);
+  canvas.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    scratching=true;
+  },{passive:false});
+
   canvas.addEventListener("touchend",()=>scratching=false);
+
   canvas.addEventListener("touchmove",e=>{
     if(!scratching)return;
+    e.preventDefault();
     const [x,y]=getXY(e);
     scratch(x,y);
-  });
+  },{passive:false});
 }
 
-/* Final */
 function showFinal(){
   finalText.style.display="block";
   finalText.innerHTML=`
@@ -258,26 +271,58 @@ function showFinal(){
   </div>
   `;
 
-  for(let i=0;i<30;i++) createHeart();
-
-  document.getElementById("yesBtn").onclick=(e)=>{
+  document.getElementById("yesBtn").onclick=()=>{
     finalText.innerHTML="พี่จะดูแลหัวใจหนูให้ดีที่สุดตลอดไป 💖";
+
     firework(window.innerWidth/2,window.innerHeight/2);
+
+    let count=0;
+    const effectInterval=setInterval(()=>{
+      for(let i=0;i<5;i++){
+        createRose();
+        createHeartBurst();
+        createPetal();
+      }
+      count++;
+      if(count>20){
+        clearInterval(effectInterval);
+      }
+    },200);
   };
 }
 
-/* เอฟเฟกต์หัวใจ */
-function createHeart(){
+function createHeartBurst(){
   const h=document.createElement("div");
   h.className="heart";
   h.innerText="💖";
   h.style.left=Math.random()*100+"vw";
-  h.style.fontSize=(18+Math.random()*20)+"px";
+  h.style.fontSize=(18+Math.random()*25)+"px";
   document.body.appendChild(h);
   setTimeout(()=>h.remove(),4000);
 }
 
-/* Firework */
+function createRose(){
+  const r=document.createElement("div");
+  r.className="rose";
+  r.innerText="🌹";
+  r.style.left=Math.random()*100+"vw";
+  r.style.fontSize=(22+Math.random()*30)+"px";
+  r.style.animationDuration=(3+Math.random()*2)+"s";
+  document.body.appendChild(r);
+  setTimeout(()=>r.remove(),5000);
+}
+
+function createPetal(){
+  const p=document.createElement("div");
+  p.className="petal";
+  p.innerText="🌸";
+  p.style.left=Math.random()*100+"vw";
+  p.style.fontSize=(16+Math.random()*20)+"px";
+  p.style.animationDuration=(3+Math.random()*3)+"s";
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),6000);
+}
+
 function firework(x,y){
   for(let i=0;i<25;i++){
     const p=document.createElement("div");
